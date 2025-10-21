@@ -26,6 +26,9 @@ sentence-transformers==2.3.1
 # Environment management
 python-dotenv==1.0.0
 
+# HTTP requests for API calls
+requests>=2.31.0
+
 # Optional: LangSmith tracing for debugging
 langsmith==0.0.77
 

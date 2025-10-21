@@ -1,0 +1,621 @@
+{
+  "metadata": {
+    "total_queries": 102,
+    "generated_timestamp": "2025-10-21",
+    "description": "Generated test queries for RAG evaluation"
+  },
+  "queries": [
+    {
+      "id": 1,
+      "query": "",
+      "length": 0,
+      "complexity": "empty"
+    },
+    {
+      "id": 2,
+      "query": "quads training",
+      "length": 14,
+      "complexity": "moderate"
+    },
+    {
+      "id": 3,
+      "query": "advanced shoulders workout at home",
+      "length": 34,
+      "complexity": "boolean"
+    },
+    {
+      "id": 4,
+      "query": "legs training",
+      "length": 13,
+      "complexity": "moderate"
+    },
+    {
+      "id": 5,
+      "query": "abs exercises outdoors",
+      "length": 22,
+      "complexity": "boolean"
+    },
+    {
+      "id": 6,
+      "query": "highest rated back workout",
+      "length": 26,
+      "complexity": "boolean"
+    },
+    {
+      "id": 7,
+      "query": "arms or arms exercises",
+      "length": 22,
+      "complexity": "boolean"
+    },
+    {
+      "id": 8,
+      "query": "back workout",
+      "length": 12,
+      "complexity": "boolean"
+    },
+    {
+      "id": 9,
+      "query": "triceps exercises",
+      "length": 17,
+      "complexity": "moderate"
+    },
+    {
+      "id": 10,
+      "query": "arms exercises with resistance bands",
+      "length": 36,
+      "complexity": "boolean"
+    },
+    {
+      "id": 11,
+      "query": "resistance bands or cables exercises",
+      "length": 36,
+      "complexity": "boolean"
+    },
+    {
+      "id": 12,
+      "query": "Find abs workout",
+      "length": 16,
+      "complexity": "boolean"
+    },
+    {
+      "id": 13,
+      "query": "kettlebell routine",
+      "length": 18,
+      "complexity": "moderate"
+    },
+    {
+      "id": 14,
+      "query": "premium quality workouts",
+      "length": 24,
+      "complexity": "boolean"
+    },
+    {
+      "id": 15,
+      "query": "intermediate core exercises",
+      "length": 27,
+      "complexity": "boolean"
+    },
+    {
+      "id": 16,
+      "query": "advanced core exercises",
+      "length": 23,
+      "complexity": "boolean"
+    },
+    {
+      "id": 17,
+      "query": "quads and hamstrings workout",
+      "length": 28,
+      "complexity": "boolean"
+    },
+    {
+      "id": 18,
+      "query": "glutes exercises with dumbbells",
+      "length": 31,
+      "complexity": "moderate"
+    },
+    {
+      "id": 19,
+      "query": "Find biceps workout",
+      "length": 19,
+      "complexity": "boolean"
+    },
+    {
+      "id": 20,
+      "query": "best chest exercises",
+      "length": 20,
+      "complexity": "quality_focused"
+    },
+    {
+      "id": 21,
+      "query": "bodyweight workout for endurance",
+      "length": 32,
+      "complexity": "boolean"
+    },
+    {
+      "id": 22,
+      "query": "Find legs workout",
+      "length": 17,
+      "complexity": "boolean"
+    },
+    {
+      "id": 23,
+      "query": "advanced back workout with limited space",
+      "length": 40,
+      "complexity": "boolean"
+    },
+    {
+      "id": 24,
+      "query": "bodyweight workout for strength",
+      "length": 31,
+      "complexity": "boolean"
+    },
+    {
+      "id": 25,
+      "query": "core exercises outdoors",
+      "length": 23,
+      "complexity": "boolean"
+    },
+    {
+      "id": 26,
+      "query": "legs or glutes training",
+      "length": 23,
+      "complexity": "boolean"
+    },
+    {
+      "id": 27,
+      "query": "workout",
+      "length": 7,
+      "complexity": "simple"
+    },
+    {
+      "id": 28,
+      "query": "abs and core workout",
+      "length": 20,
+      "complexity": "boolean"
+    },
+    {
+      "id": 29,
+      "query": "exercises with detailed instructions",
+      "length": 36,
+      "complexity": "quality_focused"
+    },
+    {
+      "id": 30,
+      "query": "Guide for exercise ball exercises",
+      "length": 33,
+      "complexity": "boolean"
+    },
+    {
+      "id": 31,
+      "query": "dumbbells or dumbbells exercises",
+      "length": 32,
+      "complexity": "boolean"
+    },
+    {
+      "id": 32,
+      "query": "easy biceps exercises",
+      "length": 21,
+      "complexity": "moderate"
+    },
+    {
+      "id": 33,
+      "query": "bodyweight or dumbbells exercises",
+      "length": 33,
+      "complexity": "boolean"
+    },
+    {
+      "id": 34,
+      "query": "detailed cables workout",
+      "length": 23,
+      "complexity": "boolean"
+    },
+    {
+      "id": 35,
+      "query": "best rated shoulder exercises with cables",
+      "length": 41,
+      "complexity": "quality_focused"
+    },
+    {
+      "id": 36,
+      "query": "abs exercises for endurance",
+      "length": 27,
+      "complexity": "boolean"
+    },
+    {
+      "id": 37,
+      "query": "advanced leg training with barbells",
+      "length": 35,
+      "complexity": "moderate"
+    },
+    {
+      "id": 38,
+      "query": "cable training",
+      "length": 14,
+      "complexity": "moderate"
+    },
+    {
+      "id": 39,
+      "query": "advanced glutes exercises",
+      "length": 25,
+      "complexity": "moderate"
+    },
+    {
+      "id": 40,
+      "query": "exercise",
+      "length": 8,
+      "complexity": "simple"
+    },
+    {
+      "id": 41,
+      "query": "abs workout",
+      "length": 11,
+      "complexity": "boolean"
+    },
+    {
+      "id": 42,
+      "query": "back exercises",
+      "length": 14,
+      "complexity": "moderate"
+    },
+    {
+      "id": 43,
+      "query": "bodyweight exercises",
+      "length": 20,
+      "complexity": "moderate"
+    },
+    {
+      "id": 44,
+      "query": "a",
+      "length": 1,
+      "complexity": "simple"
+    },
+    {
+      "id": 45,
+      "query": "workout routine for everything",
+      "length": 30,
+      "complexity": "boolean"
+    },
+    {
+      "id": 46,
+      "query": "Step by step shoulders workout",
+      "length": 30,
+      "complexity": "boolean"
+    },
+    {
+      "id": 47,
+      "query": "challenging resistance bands workout",
+      "length": 36,
+      "complexity": "boolean"
+    },
+    {
+      "id": 48,
+      "query": "chest or shoulder exercises",
+      "length": 27,
+      "complexity": "boolean"
+    },
+    {
+      "id": 49,
+      "query": "advanced kettlebells workout",
+      "length": 28,
+      "complexity": "boolean"
+    },
+    {
+      "id": 50,
+      "query": "kettlebells or barbells exercises",
+      "length": 33,
+      "complexity": "boolean"
+    },
+    {
+      "id": 51,
+      "query": "What are good calves exercises?",
+      "length": 31,
+      "complexity": "moderate"
+    },
+    {
+      "id": 52,
+      "query": "intermediate triceps exercises",
+      "length": 30,
+      "complexity": "moderate"
+    },
+    {
+      "id": 53,
+      "query": "fitness",
+      "length": 7,
+      "complexity": "simple"
+    },
+    {
+      "id": 54,
+      "query": "detailed chest exercises",
+      "length": 24,
+      "complexity": "quality_focused"
+    },
+    {
+      "id": 55,
+      "query": "barbell workout",
+      "length": 15,
+      "complexity": "boolean"
+    },
+    {
+      "id": 56,
+      "query": "I need triceps exercises",
+      "length": 24,
+      "complexity": "moderate"
+    },
+    {
+      "id": 57,
+      "query": "resistance bands workout outdoors",
+      "length": 33,
+      "complexity": "boolean"
+    },
+    {
+      "id": 58,
+      "query": "shoulder exercises",
+      "length": 18,
+      "complexity": "moderate"
+    },
+    {
+      "id": 59,
+      "query": "chest or shoulders exercises",
+      "length": 28,
+      "complexity": "boolean"
+    },
+    {
+      "id": 60,
+      "query": "abs exercises with barbells",
+      "length": 27,
+      "complexity": "moderate"
+    },
+    {
+      "id": 61,
+      "query": "dumbbells or barbells exercises",
+      "length": 31,
+      "complexity": "boolean"
+    },
+    {
+      "id": 62,
+      "query": "machines chest workout",
+      "length": 22,
+      "complexity": "boolean"
+    },
+    {
+      "id": 63,
+      "query": "back and bicep workout",
+      "length": 22,
+      "complexity": "boolean"
+    },
+    {
+      "id": 64,
+      "query": "best arms exercises",
+      "length": 19,
+      "complexity": "quality_focused"
+    },
+    {
+      "id": 65,
+      "query": "dumbbell exercises",
+      "length": 18,
+      "complexity": "moderate"
+    },
+    {
+      "id": 66,
+      "query": "beginner bodyweight workout",
+      "length": 27,
+      "complexity": "boolean"
+    },
+    {
+      "id": 67,
+      "query": "best core exercises",
+      "length": 19,
+      "complexity": "boolean"
+    },
+    {
+      "id": 68,
+      "query": "core and legs workout",
+      "length": 21,
+      "complexity": "boolean"
+    },
+    {
+      "id": 69,
+      "query": "How to do arms exercises",
+      "length": 24,
+      "complexity": "moderate"
+    },
+    {
+      "id": 70,
+      "query": "core training",
+      "length": 13,
+      "complexity": "boolean"
+    },
+    {
+      "id": 71,
+      "query": "Guide for dumbbells exercises",
+      "length": 29,
+      "complexity": "boolean"
+    },
+    {
+      "id": 72,
+      "query": "legs exercises at home",
+      "length": 22,
+      "complexity": "moderate"
+    },
+    {
+      "id": 73,
+      "query": "best exercises ever",
+      "length": 19,
+      "complexity": "quality_focused"
+    },
+    {
+      "id": 74,
+      "query": "exercise ball workout for toning",
+      "length": 32,
+      "complexity": "boolean"
+    },
+    {
+      "id": 75,
+      "query": "arms exercises with limited space",
+      "length": 33,
+      "complexity": "moderate"
+    },
+    {
+      "id": 76,
+      "query": "abs and shoulders workout",
+      "length": 25,
+      "complexity": "boolean"
+    },
+    {
+      "id": 77,
+      "query": "chest exercises with dumbbells for muscle building",
+      "length": 50,
+      "complexity": "boolean"
+    },
+    {
+      "id": 78,
+      "query": "training",
+      "length": 8,
+      "complexity": "simple"
+    },
+    {
+      "id": 79,
+      "query": "Guide for cables exercises",
+      "length": 26,
+      "complexity": "boolean"
+    },
+    {
+      "id": 80,
+      "query": "leg training",
+      "length": 12,
+      "complexity": "moderate"
+    },
+    {
+      "id": 81,
+      "query": "premium chest exercises with cables",
+      "length": 35,
+      "complexity": "quality_focused"
+    },
+    {
+      "id": 82,
+      "query": "arms exercises with bodyweight for fat loss",
+      "length": 43,
+      "complexity": "boolean"
+    },
+    {
+      "id": 83,
+      "query": "arm exercises",
+      "length": 13,
+      "complexity": "moderate"
+    },
+    {
+      "id": 84,
+      "query": "chest exercises",
+      "length": 15,
+      "complexity": "moderate"
+    },
+    {
+      "id": 85,
+      "query": "What are good back exercises?",
+      "length": 29,
+      "complexity": "moderate"
+    },
+    {
+      "id": 86,
+      "query": "shoulders exercises with limited space",
+      "length": 38,
+      "complexity": "moderate"
+    },
+    {
+      "id": 87,
+      "query": "Step by step arms workout",
+      "length": 25,
+      "complexity": "boolean"
+    },
+    {
+      "id": 88,
+      "query": "Guide for machines exercises",
+      "length": 28,
+      "complexity": "boolean"
+    },
+    {
+      "id": 89,
+      "query": "barbells workout with limited space",
+      "length": 35,
+      "complexity": "boolean"
+    },
+    {
+      "id": 90,
+      "query": "What are good arms exercises?",
+      "length": 29,
+      "complexity": "moderate"
+    },
+    {
+      "id": 91,
+      "query": "arms training",
+      "length": 13,
+      "complexity": "moderate"
+    },
+    {
+      "id": 92,
+      "query": "bodyweight workout in gym",
+      "length": 25,
+      "complexity": "boolean"
+    },
+    {
+      "id": 93,
+      "query": "beginner back workout at home",
+      "length": 29,
+      "complexity": "boolean"
+    },
+    {
+      "id": 94,
+      "query": "Find shoulders workout",
+      "length": 22,
+      "complexity": "boolean"
+    },
+    {
+      "id": 95,
+      "query": "Show me exercise ball exercises",
+      "length": 31,
+      "complexity": "moderate"
+    },
+    {
+      "id": 96,
+      "query": "I need hamstrings exercises",
+      "length": 27,
+      "complexity": "moderate"
+    },
+    {
+      "id": 97,
+      "query": "highest rated dumbbells workout",
+      "length": 31,
+      "complexity": "boolean"
+    },
+    {
+      "id": 98,
+      "query": "challenging exercise ball workout",
+      "length": 33,
+      "complexity": "boolean"
+    },
+    {
+      "id": 99,
+      "query": "kettlebells workout in gym",
+      "length": 26,
+      "complexity": "boolean"
+    },
+    {
+      "id": 100,
+      "query": "advanced machines workout",
+      "length": 25,
+      "complexity": "boolean"
+    },
+    {
+      "id": 101,
+      "query": "barbells workout outdoors",
+      "length": 25,
+      "complexity": "boolean"
+    },
+    {
+      "id": 102,
+      "query": "machines workout for strength",
+      "length": 29,
+      "complexity": "boolean"
+    }
+  ]
+}

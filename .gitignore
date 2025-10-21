@@ -205,21 +205,35 @@ chroma_db/
 # Environment variables
 .env
 
-# BoardGameGeek data files (keep originals)
-/data/*
-!data/artists_reduced.csv
-!data/bgg_data_documentation.txt
-!data/designers_reduced.csv
-!data/games.csv
-!data/mechanics.csv
-!data/publishers_reduced.csv
-!data/ratings_distribution.csv
-!data/subcategories.csv
-!data/themes.csv
+# Fitness dataset files (keep originals but ignore processed versions)
+/data/processed/
+/data/temp/
+/data/*.tmp
+/data/*.backup
+
+# Evaluation logs and results
+logs/
+*.log
+
+# Model cache and embeddings
+.cache/
+*/.cache/
+embeddings/
+
+# Ollama model cache
+~/.ollama/
 
 # HuggingFace cache
 .cache/
 */.cache/
+
+# Temporary RAG outputs
+temp_output/
+output/
+
+# System files
+.DS_Store
+Thumbs.db
 
 # Jupyter notebook checkpoints
 .ipynb_checkpoints/

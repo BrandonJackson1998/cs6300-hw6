@@ -39,12 +39,24 @@ class QueryAnalyzer:
             'premium': ['premium', 'complete', 'comprehensive', 'merged']
         }
         
-        # Mapping from detected terms to database values
+        # Mapping from detected terms to database values (match actual DB values)
         self.body_part_mapping = {
-            'shoulder': 'shoulders', 'arm': 'arms', 'leg': 'legs',
-            'bicep': 'upper arms', 'biceps': 'upper arms',
-            'tricep': 'upper arms', 'triceps': 'upper arms',
-            'quad': 'upper legs', 'quads': 'upper legs'
+            'shoulder': 'Shoulders', 'shoulders': 'Shoulders',
+            'chest': 'Chest',
+            'back': 'Lats', 'lats': 'Lats', 'lat': 'Lats',
+            'middle back': 'Middle Back', 'lower back': 'Lower Back',
+            'arm': 'Biceps', 'arms': 'Biceps', 
+            'bicep': 'Biceps', 'biceps': 'Biceps',
+            'tricep': 'Triceps', 'triceps': 'Triceps',
+            'leg': 'Quadriceps', 'legs': 'Quadriceps',
+            'quad': 'Quadriceps', 'quads': 'Quadriceps',
+            'hamstring': 'Hamstrings', 'hamstrings': 'Hamstrings',
+            'glute': 'Glutes', 'glutes': 'Glutes',
+            'abs': 'Abdominals', 'core': 'Abdominals', 'abdominals': 'Abdominals',
+            'calf': 'Calves', 'calves': 'Calves',
+            'trap': 'Traps', 'traps': 'Traps',
+            'forearm': 'Forearms', 'forearms': 'Forearms',
+            'abductor': 'Abductors', 'abductors': 'Abductors'
         }
     
     def analyze_query(self, query: str) -> Dict[str, Any]:
@@ -136,7 +148,7 @@ class QueryAnalyzer:
             query_lower = re.sub(rating_pattern, ' ', query_lower)
         
         # Clean up and extract semantic keywords
-        # Remove common stop words and filter indicators (keep 'or' for semantic search if not used for filtering)
+        # Remove common stop words but keep fitness-related terms
         stop_words = {
             'the', 'a', 'an', 'and', 'but', 'in', 'on', 'at', 'to', 'for', 
             'of', 'with', 'by', 'from', 'about', 'into', 'through', 'during', 
@@ -146,20 +158,77 @@ class QueryAnalyzer:
             'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only',
             'own', 'same', 'so', 'than', 'too', 'very', 'can', 'will', 'just',
             'should', 'now', 'i', 'me', 'my', 'myself', 'we', 'our', 'ours',
-            'need', 'want', 'show', 'find', 'get', 'give', 'exercises', 'workout',
-            'workouts', 'training', 'routine'
+            'need', 'want', 'show', 'find', 'get', 'give'
+        }
+        
+        # Keep important fitness terms that might be filtered out
+        fitness_terms = {
+            'exercises', 'workout', 'workouts', 'training', 'routine',
+            'strength', 'cardio', 'endurance', 'power', 'flexibility',
+            'outdoors', 'indoor', 'home', 'gym', 'advanced', 'beginner',
+            'bodyweight', 'weighted', 'explosive', 'slow', 'controlled'
         }
         
         # Only remove 'or' if it was used for filter logic
         if has_or_logic:
             stop_words.add('or')
         
-        # Tokenize and filter
+        # Tokenize and filter - keep fitness terms even if they seem like stop words
         words = re.findall(r'\b\w+\b', query_lower)
-        semantic_keywords = [word for word in words if word not in stop_words and len(word) > 2]
+        semantic_keywords = []
+        for word in words:
+            if word in fitness_terms or (word not in stop_words and len(word) > 2):
+                semantic_keywords.append(word)
         
-        # Create sanitized query
-        sanitized_query = ' '.join(semantic_keywords)
+        # Create sanitized query - if no meaningful keywords, use body-part specific terms
+        if semantic_keywords:
+            sanitized_query = ' '.join(semantic_keywords)
+        else:
+            # Fallback to simple terms for semantic search
+            sanitized_query = 'exercise workout'
+        
+        # Special handling: enhance with body-part specific terms for better results
+        should_enhance = False
+        
+        # Always enhance if only generic terms
+        generic_only_terms = {'training', 'workout', 'exercises', 'exercise', 'routine'}
+        if set(semantic_keywords).issubset(generic_only_terms) and body_part_matches:
+            should_enhance = True
+        
+        # Special case: if "outdoors" or similar environmental terms, prioritize bodyweight
+        environmental_terms = {'outdoors', 'outdoor', 'home', 'bodyweight', 'no'}
+        if any(term in semantic_keywords for term in environmental_terms) and body_part_matches:
+            should_enhance = True
+            
+        if should_enhance:
+            # Enhance semantic search with body-part specific exercise terms
+            body_part_enhancements = {
+                'legs': 'squat lunge deadlift leg press',
+                'quads': 'squat lunge leg press extension',
+                'hamstring': 'deadlift curl stiff leg',
+                'glutes': 'squat deadlift lunge hip thrust',
+                'chest': 'press pushup fly bench',
+                'back': 'row pullup pulldown deadlift',
+                'shoulders': 'press raise lateral overhead',
+                'biceps': 'curl chin hammer preacher',
+                'triceps': 'press dip extension overhead',
+                'abs': 'crunch plank sit up bodyweight',
+                'core': 'plank crunch deadbug mountain'
+            }
+            
+            # Special case: if "outdoors" is mentioned, prioritize bodyweight exercises
+            if any(term in semantic_keywords for term in environmental_terms):
+                if any(bp.lower() in ['abs', 'core'] for bp in body_part_matches):
+                    sanitized_query = f"bodyweight crunch plank sit mountain climber"
+                else:
+                    sanitized_query = f"{sanitized_query} bodyweight".strip()
+            else:
+                # Regular enhancement
+                for detected_part in body_part_matches:
+                    if detected_part.lower() in body_part_enhancements:
+                        enhancement = body_part_enhancements[detected_part.lower()]
+                        sanitized_query = f"{sanitized_query} {enhancement}".strip()
+                        break
         
         return {
             'filters': filters if filters else None,
@@ -198,29 +267,96 @@ class FitnessRAG:
         
         print("✓ RAG Agent initialized")
     
-    def retrieve(self, query: str, filters: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    def retrieve(self, query: str, filters: Optional[Dict[str, Any]] = None, allow_fallback: bool = True, silent: bool = False) -> List[Dict[str, Any]]:
         """
-        Retrieve relevant exercises using semantic search
+        Retrieve relevant exercises using semantic search with intelligent fallback
         
         Args:
             query: Natural language query
             filters: Optional metadata filters
+            allow_fallback: Whether to try fallback searches if no results found
+            silent: Whether to suppress all output
             
         Returns:
             List of retrieved documents with metadata
         """
-        print(f"🔍 Searching for: '{query}'")
-        if filters:
-            print(f"📋 Filters: {filters}")
+        if not silent:
+            print(f"🔍 Searching for: '{query}'")
+            if filters:
+                print(f"📋 Filters: {filters}")
         
-        # Query the collection
+        # First attempt: Query with filters
         results = self.collection.query(
             query_texts=[query],
             n_results=self.top_k,
             where=filters
         )
         
-        # Format results
+        # Check if we got results
+        documents = self._format_results(results)
+        
+        # If no results and fallback enabled, try progressive fallback
+        if not documents and allow_fallback and filters:
+            if not silent:
+                print("🔄 No results found, trying fallback strategies...")
+            
+            # Strategy 1: Remove semantic query, just use filters (common case: "outdoors", "training", etc.)
+            if query.strip() and len(query.split()) <= 2:
+                if not silent:
+                    print(f"   Fallback 1: Filter-only search")
+                # Use body part filter only with empty/generic query
+                fallback_results = self.collection.query(
+                    query_texts=["exercise workout training"],  # Generic terms
+                    n_results=self.top_k,
+                    where=filters
+                )
+                documents = self._format_results(fallback_results)
+                
+            # Strategy 2: If still no results, expand body part filters
+            if not documents and 'body_part' in filters:
+                body_part = filters['body_part']
+                if not silent:
+                    print(f"   Fallback 2: Expanding {body_part} search")
+                
+                # Expand certain body parts to include related ones
+                expanded_filters = filters.copy()
+                if body_part == 'Quadriceps':
+                    # Include all leg muscles
+                    expanded_filters['body_part'] = {'$in': ['Quadriceps', 'Hamstrings', 'Glutes', 'Calves']}
+                elif body_part == 'Biceps':
+                    # Include all arm muscles  
+                    expanded_filters['body_part'] = {'$in': ['Biceps', 'Triceps', 'Forearms']}
+                elif body_part == 'Lats':
+                    # Include all back muscles
+                    expanded_filters['body_part'] = {'$in': ['Lats', 'Middle Back', 'Lower Back', 'Traps']}
+                
+                fallback_results = self.collection.query(
+                    query_texts=["exercise"],
+                    n_results=self.top_k,
+                    where=expanded_filters
+                )
+                documents = self._format_results(fallback_results)
+                
+            # Strategy 3: Remove all filters, pure semantic search
+            if not documents:
+                if not silent:
+                    print(f"   Fallback 3: Pure semantic search")
+                fallback_results = self.collection.query(
+                    query_texts=[query],
+                    n_results=self.top_k
+                )
+                documents = self._format_results(fallback_results)
+        
+        # Log the exercise names only if not silent
+        if not silent:
+            exercise_names = [doc['metadata']['name'] for doc in documents]
+            print(f"✓ Found {len(documents)} relevant exercises")
+            for i, name in enumerate(exercise_names, 1):
+                print(f"  {i}. {name}")
+        return documents
+    
+    def _format_results(self, results) -> List[Dict[str, Any]]:
+        """Format ChromaDB results into standard document format"""
         documents = []
         if results['documents'] and results['documents'][0]:
             for i, (doc_id, document, metadata) in enumerate(zip(
@@ -234,12 +370,6 @@ class FitnessRAG:
                     'metadata': metadata,
                     'rank': i + 1
                 })
-        
-        # Log the exercise names
-        exercise_names = [doc['metadata']['name'] for doc in documents]
-        print(f"✓ Found {len(documents)} relevant exercises")
-        for i, name in enumerate(exercise_names, 1):
-            print(f"  {i}. {name}")
         return documents
     
     def format_recommendations(self, documents: List[Dict[str, Any]], query: str) -> str:
@@ -316,7 +446,7 @@ class FitnessRAG:
         
         return '\n'.join(recommendations)
     
-    def query(self, question: str, filters: Optional[Dict[str, Any]] = None, verbose: bool = True) -> Dict[str, Any]:
+    def query(self, question: str, filters: Optional[Dict[str, Any]] = None, verbose: bool = True, silent: bool = False) -> Dict[str, Any]:
         """
         Main RAG pipeline: retrieve + format recommendations
         
@@ -324,11 +454,12 @@ class FitnessRAG:
             question: User question/query
             filters: Optional metadata filters  
             verbose: Whether to print intermediate steps
+            silent: Whether to suppress all output (overrides verbose)
             
         Returns:
             Dictionary with formatted recommendations and metadata
         """
-        if verbose:
+        if verbose and not silent:
             print(f"\n{'='*60}")
             print(f"FITNESS EXERCISE QUERY")
             print(f"{'='*60}")
@@ -339,7 +470,7 @@ class FitnessRAG:
             extracted_filters = analysis['filters']
             sanitized_query = analysis['sanitized_query']
             
-            if verbose and extracted_filters:
+            if verbose and not silent and extracted_filters:
                 print(f"🧠 Extracted filters: {extracted_filters}")
                 print(f"🔍 Semantic query: '{sanitized_query}'")
         else:
@@ -360,15 +491,15 @@ class FitnessRAG:
             chroma_filters = extracted_filters
             
         # Step 3: Retrieve relevant exercises
-        documents = self.retrieve(sanitized_query, chroma_filters)
+        documents = self.retrieve(sanitized_query, chroma_filters, silent=silent)
         
         # Step 4: Format recommendations
-        if verbose:
+        if verbose and not silent:
             print("📝 Formatting recommendations...")
         
         recommendations = self.format_recommendations(documents, question)
         
-        if verbose:
+        if verbose and not silent:
             print("✅ Query complete!")
             print("\n" + recommendations)
         
