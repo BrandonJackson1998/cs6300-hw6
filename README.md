@@ -1,1 +1,1 @@
-# cs6300-hw6
+# Fitness & Trainer Coach
