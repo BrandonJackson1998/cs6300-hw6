@@ -21,8 +21,6 @@ help:
 	@echo "  generate-queries          - Generate test queries for evaluation"
 	@echo "  evaluate                  - Run RAG evaluation with detailed explanations"
 	@echo "  evaluate-quiet            - Run RAG evaluation without explanations"
-	@echo "  bulk-evaluate             - Run bulk query evaluation (100+ queries)"
-	@echo "  quick-test                - Quick stress test (25 essential queries)"
 	@echo "  test-tools                - Test tool wrapper functions"
 	@echo
 	@echo "Evaluation (Ollama):"
@@ -80,12 +78,6 @@ evaluate-quiet:
 
 generate-queries:
 	source $(VENV)/bin/activate; python -m scripts.generate_test_queries
-
-bulk-evaluate:
-	source $(VENV)/bin/activate; python -m scripts.bulk_query_evaluator
-
-quick-test:
-	source $(VENV)/bin/activate; python -m scripts.quick_stress_test
 
 test-tools:
 	source $(VENV)/bin/activate; python -m src.tools

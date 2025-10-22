@@ -129,9 +129,7 @@ make ollama-status     # Check Ollama status
 # Evaluation Commands
 make generate-queries  # Generate test queries for evaluation
 make evaluate          # Run evaluation with detailed explanations
-make evaluate-quiet    # Run evaluation without displaying explanations  
-make bulk-evaluate     # Run bulk evaluation (100+ queries)
-make quick-test        # Quick stress test (25 essential queries)
+make evaluate-quiet    # Run evaluation without displaying explanations
 
 # Maintenance
 make clean             # Clean generated files
@@ -181,9 +179,7 @@ cs6300-hw6/
 │   └── evaluation.py        # LLM-based quality evaluation framework
 ├── scripts/
 │   ├── explore_data.py      # Dataset analysis utilities
-│   ├── generate_test_queries.py  # Test query generation for evaluation
-│   ├── bulk_query_evaluator.py  # Comprehensive stress testing (100+ queries)
-│   └── quick_stress_test.py # Fast performance validation (24 queries)
+│   └── generate_test_queries.py  # Test query generation for evaluation
 ├── data/
 │   ├── exercises.csv        # Exercise database (1,324 exercises)
 │   ├── megaGymDataset.csv   # Exercise database (2,918 exercises)

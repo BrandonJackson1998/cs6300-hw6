@@ -214,6 +214,7 @@ chroma_db/
 # Evaluation logs and results
 logs/
 *.log
+rag_evaluation_*.json
 
 # Model cache and embeddings
 .cache/
@@ -230,6 +231,9 @@ embeddings/
 # Temporary RAG outputs
 temp_output/
 output/
+
+# Generated test data
+data/test_queries.json
 
 # System files
 .DS_Store

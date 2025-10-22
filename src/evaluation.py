@@ -8,7 +8,6 @@ import statistics
 from typing import List, Dict, Any, Tuple, Optional
 from .rag_agent import FitnessRAG
 import requests
-import time
 from datetime import datetime
 import os
 
@@ -27,6 +26,10 @@ class RAGEvaluator:
         
         # Create logs directory if it doesn't exist
         os.makedirs("logs", exist_ok=True)
+    
+    # =========================================================================
+    # TEST QUERY LOADING AND PREPARATION
+    # =========================================================================
         
     def _load_test_queries(self) -> List[Dict]:
         """Load test queries from generated file or use defaults"""
@@ -148,6 +151,10 @@ class RAGEvaluator:
             }
         ]
     
+    # =========================================================================
+    # RETRIEVAL METRICS CALCULATION
+    # =========================================================================
+    
     def calculate_precision_at_k(self, retrieved_docs: List[Dict], relevant_keywords: List[str], k: int = 5) -> float:
         """
         Calculate precision@k - how many of the top-k retrieved docs contain relevant keywords
@@ -246,6 +253,10 @@ class RAGEvaluator:
             "equipment_accuracy": equipment_accuracy
         }
     
+    # =========================================================================
+    # LLM-AS-JUDGE EVALUATION
+    # =========================================================================
+    
     def evaluate_response_quality(self, query: str, response: str) -> Dict[str, Any]:
         """
         Use Ollama (Llama 3.2) as judge to evaluate response quality with detailed feedback
@@ -257,47 +268,50 @@ class RAGEvaluator:
         Returns:
             Dict with scores (1-10 scale) and detailed explanations
         """
-        evaluation_prompt = f"""
-You are an expert fitness trainer evaluating exercise recommendations. Please rate the following response on a scale of 1-10 for each criterion and provide detailed explanations.
+        eval_prompt = f"""You are an expert evaluator for an exercise recommendation system. Evaluate how well this answer responds to the user's query.
 
-USER QUERY: {query}
+QUERY: {query}
 
-SYSTEM RESPONSE: {response}
+GENERATED ANSWER:
+{response}
 
-Please evaluate and respond with a JSON object containing scores and detailed reasoning:
+Evaluate the following aspects on a scale of 1-10:
 
-1. RETRIEVAL_RELEVANCE (1-10): How well does the response address the specific query?
-   - 10: Perfect match, exactly what was asked for
-   - 7-9: Good match with minor irrelevant content  
-   - 4-6: Partially relevant but missing key aspects
-   - 1-3: Mostly irrelevant to the query
+1. RETRIEVAL RELEVANCE (1-10): Do the exercises mentioned in the answer match what the query asked for?
+   - Check if muscle groups, exercise types, equipment, difficulty levels align with the query
+   - Are the recommended exercises actually relevant to the user's request?
+   - Does the answer address the right type of exercises?
 
-2. ANSWER_ACCURACY (1-10): How accurate and trustworthy is the fitness information?
-   - 10: All exercise information is accurate and safe
-   - 7-9: Mostly accurate with minor issues
-   - 4-6: Some accuracy concerns
-   - 1-3: Significant accuracy problems
+2. ANSWER ACCURACY (1-10): Is the generated answer factually correct about the exercises mentioned?
+   - Are the muscle groups, equipment requirements, rep ranges, difficulty levels accurate?
+   - No obvious errors or contradictions in exercise descriptions?
+   - Does the information seem reliable and consistent?
 
-3. ANSWER_COMPLETENESS (1-10): How complete and helpful is the response?
-   - 10: Comprehensive, includes all necessary details
-   - 7-9: Good detail level, minor gaps
-   - 4-6: Basic information but lacks depth
-   - 1-3: Insufficient information
+3. ANSWER COMPLETENESS (1-10): Does the answer fully address the query?
+   - Does it answer all parts of the question?
+   - Provides sufficient detail and context for decision-making?
+   - Addresses the user's intent and fitness goals appropriately?
 
-4. CITATION_QUALITY (1-10): How well organized and formatted is the response?
-   - 10: Excellent structure, clear formatting, easy to follow
-   - 7-9: Good organization with minor formatting issues
-   - 4-6: Basic organization, some clarity issues
-   - 1-3: Poor structure, hard to understand
+4. CITATION QUALITY (1-10): Are the exercise recommendations well-presented?
+   - Are exercise names clearly stated?
+   - Does it include helpful metadata (muscle groups, equipment, difficulty, reps/sets)?
+   - Are the recommendations well-organized and easy to understand?
+   - Good balance of breadth vs. depth in recommendations?
 
-Respond with JSON only in this exact format:
-{{
-  "retrieval_relevance": {{"score": X, "reason": "detailed explanation"}},
-  "answer_accuracy": {{"score": X, "reason": "detailed explanation"}},
-  "answer_completeness": {{"score": X, "reason": "detailed explanation"}},
-  "citation_quality": {{"score": X, "reason": "detailed explanation"}},
-  "overall": {{"score": X, "reason": "overall assessment"}}
-}}
+Respond in this EXACT format:
+RETRIEVAL_RELEVANCE: [score]/10
+REASON: [one sentence explaining the score]
+
+ANSWER_ACCURACY: [score]/10  
+REASON: [one sentence explaining the score]
+
+ANSWER_COMPLETENESS: [score]/10
+REASON: [one sentence explaining the score]
+
+CITATION_QUALITY: [score]/10
+REASON: [one sentence explaining the score]
+
+OVERALL: [average score]/10
 """
         
         try:
@@ -309,8 +323,11 @@ Respond with JSON only in this exact format:
             # Call Ollama API
             response_data = {
                 "model": "llama3.2",
-                "prompt": evaluation_prompt,
-                "stream": False
+                "prompt": eval_prompt,
+                "stream": False,
+                "options": {
+                    "temperature": 0.1  # Low temperature for consistent evaluation
+                }
             }
             
             llm_response = requests.post(
@@ -319,46 +336,159 @@ Respond with JSON only in this exact format:
                 timeout=45
             )
             
-            if llm_response.status_code == 200:
-                result = llm_response.json()
-                evaluation_text = result.get('response', '').strip()
+            if llm_response.status_code != 200:
+                raise ConnectionError(f"Ollama API error: {llm_response.status_code}")
+            
+            evaluation_text = llm_response.json()["response"]
+            
+            # Parse the evaluation with robust parsing
+            scores = self._parse_evaluation(evaluation_text)
+            
+            # Calculate overall if not provided
+            if scores.get('overall') is None:
+                valid_scores = [v for v in [
+                    scores.get('retrieval_relevance'),
+                    scores.get('answer_accuracy'), 
+                    scores.get('answer_completeness'),
+                    scores.get('citation_quality')
+                ] if v is not None]
                 
-                # Try to parse JSON from response
-                try:
-                    # Look for JSON in the response
-                    import re
-                    json_match = re.search(r'\{.*\}', evaluation_text, re.DOTALL)
-                    if json_match:
-                        scores = json.loads(json_match.group())
-                        
-                        # Extract scores and reasons
-                        evaluation = {}
-                        for metric in ['retrieval_relevance', 'answer_accuracy', 'answer_completeness', 'citation_quality', 'overall']:
-                            if metric in scores:
-                                evaluation[f"{metric}_score"] = float(scores[metric].get("score", 5))
-                                evaluation[f"{metric}_reason"] = scores[metric].get("reason", "No explanation provided")
-                            else:
-                                evaluation[f"{metric}_score"] = 5.0
-                                evaluation[f"{metric}_reason"] = "Evaluation not provided"
-                        
-                        return evaluation
-                except json.JSONDecodeError as e:
-                    print(f"JSON parse error: {e}")
-                    print(f"Raw response: {evaluation_text[:500]}...")
+                if valid_scores:
+                    scores['overall'] = sum(valid_scores) / len(valid_scores)
             
-            raise Exception(f"Failed to get valid response from Ollama API")
+            # Extract reasons from evaluation text
+            reasons = self._extract_reasons(evaluation_text)
             
-        except (requests.exceptions.ConnectionError, ConnectionError):
-            raise ConnectionError(
-                f"❌ Ollama is not running!\n"
-                f"   Please start Ollama first:\n"
-                f"   • Run: make ollama-setup\n"
-                f"   • Or: ollama serve\n"
-                f"   • Then: make evaluate"
-            )
+            # Combine scores with reasons
+            result = {
+                'retrieval_relevance_score': scores.get('retrieval_relevance', 0),
+                'answer_accuracy_score': scores.get('answer_accuracy', 0),
+                'answer_completeness_score': scores.get('answer_completeness', 0),
+                'citation_quality_score': scores.get('citation_quality', 0),
+                'overall_score': scores.get('overall', 0),
+                'retrieval_relevance_reason': reasons.get('retrieval_relevance', 'No explanation provided'),
+                'answer_accuracy_reason': reasons.get('answer_accuracy', 'No explanation provided'),
+                'answer_completeness_reason': reasons.get('answer_completeness', 'No explanation provided'),
+                'citation_quality_reason': reasons.get('citation_quality', 'No explanation provided'),
+                'overall_reason': reasons.get('overall', 'No explanation provided'),
+                'full_evaluation': evaluation_text
+            }
             
+            return result
+            
+        except ConnectionError as e:
+            raise e
         except Exception as e:
-            raise Exception(f"LLM evaluation failed: {str(e)}")
+            print(f"⚠️ LLM evaluation parsing failed: {e}")
+            return {
+                'retrieval_relevance_score': 0,
+                'answer_accuracy_score': 0,
+                'answer_completeness_score': 0,
+                'citation_quality_score': 0,
+                'overall_score': 0,
+                'retrieval_relevance_reason': 'Evaluation failed',
+                'answer_accuracy_reason': 'Evaluation failed',
+                'answer_completeness_reason': 'Evaluation failed',
+                'citation_quality_reason': 'Evaluation failed',
+                'overall_reason': 'Evaluation failed',
+                'full_evaluation': str(e)
+            }
+    
+    def _parse_evaluation(self, evaluation: str) -> Dict[str, float]:
+        """Robust score parsing that handles typos"""
+        import re
+        scores = {}
+        
+        patterns = {
+            'retrieval_relevance': r'(?:RETRIEVAL_RELEVANCE|RETIEVAL_RELEVANCE):\s*(\d+(?:\.\d+)?)',
+            'answer_accuracy': r'ANSWER_ACCURACY:\s*(\d+(?:\.\d+)?)',
+            'answer_completeness': r'ANSWER_COMPLETENESS:\s*(\d+(?:\.\d+)?)',
+            'citation_quality': r'CITATION_QUALITY:\s*(\d+(?:\.\d+)?)',
+            'overall': r'OVERALL:\s*(\d+(?:\.\d+)?)'
+        }
+        
+        for key, pattern in patterns.items():
+            match = re.search(pattern, evaluation, re.IGNORECASE)
+            if match:
+                scores[key] = float(match.group(1))
+            else:
+                scores[key] = None
+        
+        return scores
+    
+    def _extract_reasons(self, evaluation: str) -> Dict[str, str]:
+        """Extract reasoning text from evaluation"""
+        import re
+        reasons = {}
+        
+        # Extract reasons that follow the REASON: pattern
+        reason_patterns = {
+            'retrieval_relevance': r'RETRIEVAL_RELEVANCE:.*?\nREASON:\s*([^\n]+)',
+            'answer_accuracy': r'ANSWER_ACCURACY:.*?\nREASON:\s*([^\n]+)',
+            'answer_completeness': r'ANSWER_COMPLETENESS:.*?\nREASON:\s*([^\n]+)',
+            'citation_quality': r'CITATION_QUALITY:.*?\nREASON:\s*([^\n]+)',
+            'overall': r'OVERALL:.*?(?:\nREASON:\s*([^\n]+)|$)'
+        }
+        
+        for key, pattern in reason_patterns.items():
+            match = re.search(pattern, evaluation, re.IGNORECASE | re.DOTALL)
+            if match and match.group(1):
+                reasons[key] = match.group(1).strip()
+            else:
+                reasons[key] = f"Assessment for {key.replace('_', ' ')}"
+        
+        return reasons
+    
+    # =========================================================================
+    # EVALUATION DISPLAY AND FORMATTING
+    # =========================================================================
+    
+    def _display_evaluation_result(self, evaluation: Dict[str, Any]):
+        """Display beautiful evaluation result with progress bars like the judge.md example"""
+        if not evaluation:
+            return
+            
+        # Extract scores
+        relevance = evaluation.get('retrieval_relevance_score', 0)
+        accuracy = evaluation.get('answer_accuracy_score', 0)
+        completeness = evaluation.get('answer_completeness_score', 0)
+        citation = evaluation.get('citation_quality_score', 0)
+        overall = evaluation.get('overall_score', 0)
+        
+        if overall == 0:
+            overall = statistics.mean([relevance, accuracy, completeness, citation])
+        
+        print("\n" + "="*80)
+        print("EVALUATION (LLM-as-a-judge with Llama 3.2)")
+        print("="*80)
+        print()
+        print("Scores:")
+        print(f"  Retrieval Relevance:   {self._create_progress_bar(relevance)} {relevance:.1f}/10")
+        print(f"  Answer Accuracy:       {self._create_progress_bar(accuracy)} {accuracy:.1f}/10")
+        print(f"  Answer Completeness:   {self._create_progress_bar(completeness)} {completeness:.1f}/10")
+        print(f"  Citation Quality:      {self._create_progress_bar(citation)} {citation:.1f}/10")
+        print(f"  ──────────────────────────────────────────────────")
+        print(f"  Overall Score:         {self._create_progress_bar(overall)} {overall:.1f}/10")
+        print()
+        
+        if self.show_explanations:
+            print("Detailed Feedback:")
+            print(f"RETRIEVAL_RELEVANCE: {relevance:.0f}/10")
+            print(f"REASON: {evaluation.get('retrieval_relevance_reason', 'No explanation provided')}")
+            print()
+            print(f"ANSWER_ACCURACY: {accuracy:.0f}/10")
+            print(f"REASON: {evaluation.get('answer_accuracy_reason', 'No explanation provided')}")
+            print()
+            print(f"ANSWER_COMPLETENESS: {completeness:.0f}/10")
+            print(f"REASON: {evaluation.get('answer_completeness_reason', 'No explanation provided')}")
+            print()
+            print(f"CITATION_QUALITY: {citation:.0f}/10")
+            print(f"REASON: {evaluation.get('citation_quality_reason', 'No explanation provided')}")
+            print()
+            print(f"OVERALL: {overall:.1f}/10")
+            print(f"REASON: {evaluation.get('overall_reason', 'Comprehensive assessment of all evaluation criteria.')}")
+        
+        print("="*80)
     
     def _create_progress_bar(self, score: float, max_score: float = 10.0) -> str:
         """Create a visual progress bar for scores"""
@@ -366,55 +496,9 @@ Respond with JSON only in this exact format:
         empty_blocks = 10 - filled_blocks
         return "█" * filled_blocks + "░" * empty_blocks
     
-    def _format_detailed_evaluation(self, evaluation: Dict[str, Any]) -> str:
-        """Format LLM evaluation with progress bars and explanations"""
-        if not evaluation:
-            return "LLM evaluation not available"
-        
-        # Extract scores
-        relevance = evaluation.get('retrieval_relevance_score', 0)
-        accuracy = evaluation.get('answer_accuracy_score', 0) 
-        completeness = evaluation.get('answer_completeness_score', 0)
-        citation = evaluation.get('citation_quality_score', 0)
-        overall = evaluation.get('overall_score', 0)
-        
-        # Calculate average if overall not provided
-        if overall == 0:
-            overall = statistics.mean([relevance, accuracy, completeness, citation])
-        
-        output = []
-        output.append("="*80)
-        output.append("EVALUATION (LLM-as-a-judge with Llama 3.2)")
-        output.append("="*80)
-        output.append("")
-        output.append("Scores:")
-        output.append(f"  Retrieval Relevance:   {self._create_progress_bar(relevance)} {relevance:.1f}/10")
-        output.append(f"  Answer Accuracy:       {self._create_progress_bar(accuracy)} {accuracy:.1f}/10")
-        output.append(f"  Answer Completeness:   {self._create_progress_bar(completeness)} {completeness:.1f}/10")
-        output.append(f"  Citation Quality:      {self._create_progress_bar(citation)} {citation:.1f}/10")
-        output.append(f"  ──────────────────────────────────────────────────")
-        output.append(f"  Overall Score:         {self._create_progress_bar(overall)} {overall:.1f}/10")
-        output.append("")
-        
-        if self.show_explanations:
-            output.append("Detailed Feedback:")
-            output.append(f"RETIEVAL_RELEVANCE: {relevance:.0f}/10")
-            output.append(f"REASON: {evaluation.get('retrieval_relevance_reason', 'No explanation provided')}")
-            output.append("")
-            output.append(f"ANSWER_ACCURACY: {accuracy:.0f}/10")
-            output.append(f"REASON: {evaluation.get('answer_accuracy_reason', 'No explanation provided')}")
-            output.append("")
-            output.append(f"ANSWER_COMPLETENESS: {completeness:.0f}/10")
-            output.append(f"REASON: {evaluation.get('answer_completeness_reason', 'No explanation provided')}")
-            output.append("")
-            output.append(f"CITATION_QUALITY: {citation:.0f}/10")
-            output.append(f"REASON: {evaluation.get('citation_quality_reason', 'No explanation provided')}")
-            output.append("")
-            output.append(f"OVERALL: {overall:.1f}/10")
-            output.append(f"REASON: {evaluation.get('overall_reason', 'No explanation provided')}")
-        
-        output.append("="*80)
-        return "\n".join(output)
+    # =========================================================================
+    # MAIN EVALUATION ORCHESTRATION
+    # =========================================================================
     
     def run_evaluation(self) -> Dict[str, Any]:
         """
@@ -466,7 +550,8 @@ Respond with JSON only in this exact format:
                 if overall == 0:
                     overall = statistics.mean([relevance, accuracy, completeness, citation])
                 
-                print(f"  📊 P@5: {precision_5:.2f} | Hit Rate: {hit_rate:.2f} | LLM Overall: {overall:.1f}/10")
+                # Display beautiful formatted evaluation
+                self._display_evaluation_result(llm_evaluation)
                 
             except ConnectionError as e:
                 print(f"\n{str(e)}")
@@ -477,7 +562,7 @@ Respond with JSON only in this exact format:
                 llm_evaluation = None
             
             if not llm_evaluation:
-                print(f"  📊 P@5: {precision_5:.2f} | Hit Rate: {hit_rate:.2f} | LLM: N/A (Ollama not running)")
+                print(f"  ⚠️ LLM evaluation not available (Ollama not running)")
             
             # Store results
             result = {
@@ -504,6 +589,10 @@ Respond with JSON only in this exact format:
         # Print final report
         self._print_evaluation_report(results, summary)
         
+        # Print detailed LLM judge summary if available
+        if summary.get('avg_overall_score') is not None:
+            self._print_llm_judge_summary(summary)
+        
         print(f"\n✅ Detailed evaluation results saved to: {log_filename}")
         
         return {
@@ -512,6 +601,10 @@ Respond with JSON only in this exact format:
             "test_queries_count": len(self.test_queries),
             "log_file": log_filename
         }
+    
+    # =========================================================================
+    # SUMMARY STATISTICS AND REPORTING
+    # =========================================================================
     
     def _calculate_summary_stats(self, results: List[Dict]) -> Dict[str, float]:
         """Calculate summary statistics across all test queries"""
@@ -641,6 +734,9 @@ Respond with JSON only in this exact format:
             print(f"  • Precision@5: {worst_query['precision_at_5']:.3f}")
             print(f"  • Hit Rate: {worst_query['hit_rate']:.3f}")
         
+        # Add comprehensive results table
+        self._print_results_table(results)
+        
         print(f"\n📈 RECOMMENDATIONS:")
         if summary['avg_precision_at_5'] < 0.6:
             print("  • Consider improving semantic search relevance")
@@ -652,6 +748,94 @@ Respond with JSON only in this exact format:
             print("  • Improve query-response relevance matching")
         if summary['avg_answer_completeness_score'] is not None and summary['avg_answer_completeness_score'] < 7.0:
             print("  • Add more comprehensive exercise details")
+        
+        print("="*80)
+    
+    def _print_results_table(self, results: List[Dict]):
+        """Print comprehensive results table with all queries and scores"""
+        print(f"\n📊 DETAILED RESULTS TABLE")
+        print("="*130)
+        
+        # Header
+        header = f"{'#':<3} {'Query':<35} {'P@5':<6} {'Hit':<5} {'Rel':<5} {'Acc':<5} {'Comp':<6} {'Cite':<6} {'Overall':<8}"
+        print(header)
+        print("-" * 130)
+        
+        # Data rows
+        for i, result in enumerate(results, 1):
+            query = result['query'][:32] + "..." if len(result['query']) > 32 else result['query']
+            p_at_5 = f"{result['precision_at_5']:.2f}"
+            hit_rate = f"{result['hit_rate']:.2f}"
+            
+            # LLM scores (if available)
+            llm_eval = result.get('llm_evaluation')
+            if llm_eval:
+                relevance = f"{llm_eval.get('retrieval_relevance_score', 0):.1f}"
+                accuracy = f"{llm_eval.get('answer_accuracy_score', 0):.1f}"
+                completeness = f"{llm_eval.get('answer_completeness_score', 0):.1f}"
+                citation = f"{llm_eval.get('citation_quality_score', 0):.1f}"
+                overall = llm_eval.get('overall_score', 0)
+                if overall == 0:
+                    overall = statistics.mean([
+                        llm_eval.get('retrieval_relevance_score', 0),
+                        llm_eval.get('answer_accuracy_score', 0),
+                        llm_eval.get('answer_completeness_score', 0),
+                        llm_eval.get('citation_quality_score', 0)
+                    ])
+                overall_str = f"{overall:.1f}"
+            else:
+                relevance = accuracy = completeness = citation = overall_str = "N/A"
+            
+            row = f"{i:<3} {query:<35} {p_at_5:<6} {hit_rate:<5} {relevance:<5} {accuracy:<5} {completeness:<6} {citation:<6} {overall_str:<8}"
+            print(row)
+        
+        print("-" * 130)
+        print("Legend: P@5=Precision@5, Hit=Hit Rate, Rel=Retrieval Relevance, Acc=Answer Accuracy,")
+        print("        Comp=Answer Completeness, Cite=Citation Quality, Overall=LLM Overall Score")
+        print("="*130)
+    
+    def _print_llm_judge_summary(self, summary: Dict[str, float]):
+        """Print beautiful LLM judge summary with progress bars"""
+        print("\n" + "="*80)
+        print("EVALUATION (LLM-as-a-judge with Llama 3.2)")
+        print("="*80)
+        print()
+        print("Scores:")
+        
+        # Extract scores with safe defaults
+        relevance = summary.get('avg_retrieval_relevance_score', 0)
+        accuracy = summary.get('avg_answer_accuracy_score', 0)
+        completeness = summary.get('avg_answer_completeness_score', 0)
+        citation = summary.get('avg_citation_quality_score', 0)
+        overall = summary.get('avg_overall_score', 0)
+        
+        # Create progress bars and display
+        print(f"  Retrieval Relevance:   {self._create_progress_bar(relevance)} {relevance:.1f}/10")
+        print(f"  Answer Accuracy:       {self._create_progress_bar(accuracy)} {accuracy:.1f}/10")
+        print(f"  Answer Completeness:   {self._create_progress_bar(completeness)} {completeness:.1f}/10")
+        print(f"  Citation Quality:      {self._create_progress_bar(citation)} {citation:.1f}/10")
+        print(f"  ──────────────────────────────────────────────────")
+        print(f"  Overall Score:         {self._create_progress_bar(overall)} {overall:.1f}/10")
+        print()
+        
+        if self.show_explanations:
+            print("Detailed Feedback:")
+            # Note: We can't show specific reasons here since this is an aggregate summary
+            # The individual query evaluations will show detailed reasons
+            print(f"RETRIEVAL_RELEVANCE: {relevance:.0f}/10")
+            print(f"REASON: Average performance across all {len(self.test_queries)} test queries for retrieving relevant exercises.")
+            print()
+            print(f"ANSWER_ACCURACY: {accuracy:.0f}/10")
+            print(f"REASON: Average factual accuracy of exercise information, equipment, and body part targeting.")
+            print()
+            print(f"ANSWER_COMPLETENESS: {completeness:.0f}/10")
+            print(f"REASON: Average completeness of exercise descriptions, instructions, and safety information.")
+            print()
+            print(f"CITATION_QUALITY: {citation:.0f}/10")
+            print(f"REASON: Average quality of formatting, organization, and metadata presentation.")
+            print()
+            print(f"OVERALL: {overall:.1f}/10")
+            print(f"REASON: Comprehensive average across all evaluation criteria for the RAG system.")
         
         print("="*80)
     
@@ -689,10 +873,6 @@ Respond with JSON only in this exact format:
                 "timestamp": result["timestamp"]
             }
             
-            # Add formatted evaluation if LLM evaluation exists
-            if result.get("llm_evaluation"):
-                eval_entry["formatted_evaluation"] = self._format_detailed_evaluation(result["llm_evaluation"])
-            
             log_data["individual_evaluations"].append(eval_entry)
         
         # Save to JSON file
@@ -700,6 +880,11 @@ Respond with JSON only in this exact format:
             json.dump(log_data, f, indent=2)
         
         return log_filename
+
+
+# =========================================================================
+# MAIN EXECUTION
+# =========================================================================
 
 
 def main():
@@ -725,6 +910,8 @@ def main():
         # Run evaluation
         results = evaluator.run_evaluation()
         
+        # Save detailed log file (already done in run_evaluation)
+        
         # Also save a summary file for backwards compatibility
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         summary_file = f"logs/rag_evaluation_summary_{timestamp}.json"
@@ -736,13 +923,8 @@ def main():
                 "timestamp": datetime.now().isoformat()
             }, f, indent=2)
         
-        print(f"📄 Summary results also saved to: {summary_file}")
-        print(f"📄 Latest summary (for convenience): {latest_summary}")
-        
-    except Exception as e:
-        
-        # Also create a latest summary in root for convenience
-        latest_summary = "rag_evaluation_results.json"
+        # Also create a latest summary in logs for convenience
+        latest_summary = "logs/rag_evaluation_latest.json"
         with open(latest_summary, "w") as f:
             json.dump({
                 "summary": results["summary"],
@@ -751,6 +933,9 @@ def main():
                 "summary_file": summary_file,
                 "timestamp": datetime.now().isoformat()
             }, f, indent=2)
+        
+        print(f"📄 Summary results also saved to: {summary_file}")
+        print(f"📄 Latest summary (for convenience): {latest_summary}")
         
     except Exception as e:
         print(f"Error running evaluation: {e}")
