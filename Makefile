@@ -18,6 +18,7 @@ help:
 	@echo
 	@echo "RAG System:"
 	@echo "  query                     - Interactive RAG query interface"
+	@echo "  react                     - Interactive ReAct agent (conversational coach)"
 	@echo "  generate-queries          - Generate test queries for evaluation"
 	@echo "  evaluate                  - Run RAG evaluation with detailed explanations"
 	@echo "  evaluate-quiet            - Run RAG evaluation without explanations"
@@ -37,7 +38,7 @@ help:
 	@echo
 
 $(VENV):
-	python3.12 -m venv $(VENV)
+	python3 -m venv $(VENV)
 
 install: install-deb install-pip
 
@@ -68,6 +69,9 @@ index:
 
 query:
 	source $(VENV)/bin/activate; python -m src.rag_agent
+
+react:
+	source $(VENV)/bin/activate; python -m src.re_agent
 
 # Evaluation commands
 evaluate:
