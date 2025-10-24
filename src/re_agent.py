@@ -5,6 +5,7 @@ Uses LangChain's ReAct framework with exercise lookup tools
 
 import os
 from typing import List, Dict, Any, Optional
+from datetime import datetime
 from langchain_classic.agents import AgentExecutor, create_react_agent
 from langchain_core.tools import Tool
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -17,13 +18,20 @@ from .tools import exercise_lookup
 class FitnessReActAgent:
     """ReAct agent for conversational fitness coaching using exercise lookup tools"""
     
-    def __init__(self, model_name: str = "gemini-2.5-flash", temperature: float = 0.7):
+    def __init__(self, model_name: str = "gemini-2.5-flash", temperature: float = 0.7, enable_tracing: bool = True, project_name: str = "fitness-react-coach"):
         load_dotenv()
         
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
             raise ValueError(
                 "GEMINI_API_KEY not found in environment. "
+                "Please add it to your .env file."
+            )
+        
+        langsmith_key = os.getenv("LANGSMITH_API_KEY")
+        if not langsmith_key:
+            raise ValueError(
+                "LANGSMITH_API_KEY not found in environment. "
                 "Please add it to your .env file."
             )
         
@@ -114,7 +122,16 @@ Thought: {agent_scratchpad}"""
             Agent's response with exercise recommendations and guidance
         """
         try:
-            result = self.agent_executor.invoke({"input": user_input})
+            result = self.agent_executor.invoke(
+                {"input": user_input},
+                config={
+                    "metadata": {
+                        "user_input_len": len(user_input),
+                        "model": getattr(self.llm, "model", "gemini"),
+                        "timestamp": datetime.utcnow().isoformat()
+                    }
+                }
+            )
             return result["output"]
         except Exception as e:
             error_msg = f"Error processing query: {str(e)}"
