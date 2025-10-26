@@ -12,7 +12,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
 from dotenv import load_dotenv
 
-from .tools import exercise_lookup
+from .tools import exercise_lookup, validate_rest_day, get_current_day
 
 
 class FitnessReActAgent:
@@ -65,6 +65,27 @@ class FitnessReActAgent:
                     "'shoulder or chest workouts with high ratings', 'beginner leg exercises at home'. "
                     "Returns formatted exercise recommendations with ratings, equipment, target muscles, and instructions."
                 )
+            ),
+            Tool(
+                name="validate_rest_day",
+                func=validate_rest_day,
+                description=(
+                    "IMPORTANT: Check if a weekly workout schedule has too many rest days (max 2 recommended). "
+                    "Use this whenever: 1) User provides a schedule, 2) User asks about rest days, "
+                    "3) You create a workout plan (ALWAYS validate after), 4) User mentions their training schedule. "
+                    "Input format: String with days and activities separated by commas or newlines. "
+                    "Example: 'Monday: Chest, Tuesday: Rest, Wednesday: Back, Thursday: Legs, Friday: Rest, Saturday: Arms, Sunday: Rest' "
+                    "Returns: Validation result with rest day count and warning if > 2 rest days."
+                )
+            ),
+            Tool(
+                name="get_current_day",
+                func=get_current_day,
+                description=(
+                    "Get the current day of the week. "
+                    "Use this when creating workout schedules that should start from today. "
+                    "No input required. Returns current day name (e.g., 'Monday', 'Tuesday')."
+                )
             )
         ]
         return tools
@@ -89,12 +110,18 @@ Thought: I now know the final answer
 Final Answer: the final answer to the original input question
 
 Guidelines:
-1. When users ask about exercises, workouts, or training, use the exercise_lookup tool
-2. For complex requests (e.g., workout plans), break them down into multiple tool calls
-3. Provide helpful context and explanations with exercise recommendations
-4. If users ask about safety or medical concerns, remind them to consult healthcare professionals
-5. Be encouraging and supportive in your responses
-
+1. When users ask about exercises, workouts, schedules, or training, use the exercise_lookup tool
+2. Use get_current_day when creating schedules that should start from today
+3. ALWAYS use the validate_rest_day tool when:
+   - Users provide or mention a weekly workout schedule
+   - Users ask you to create a workout plan (validate it after creation)
+   - Users ask about rest days or recovery
+   - Users mention their current training schedule
+4. For complex requests (e.g., workout plans), break them down into multiple tool calls
+5. After creating any weekly workout plan, automatically validate it with validate_rest_day
+6. Provide helpful context and explanations with exercise recommendations
+7. If users ask about safety or medical concerns, remind them to consult healthcare professionals
+8. Be encouraging and supportive in your responses
 Begin!
 
 Question: {input}
@@ -148,6 +175,7 @@ Thought: {agent_scratchpad}"""
         print("  • Recommend workouts based on equipment")
         print("  • Suggest exercises for different fitness levels")
         print("  • Create custom workout routines")
+        print("  • Validate your weekly schedule for proper rest days")
         print("\nType 'quit' or 'exit' to end the conversation.")
         print("="*60)
         
