@@ -12,7 +12,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
 from dotenv import load_dotenv
 
-from .tools import exercise_lookup, validate_rest_day, get_current_day
+from .tools import exercise_lookup, validate_rest_day, get_current_day, estimate_workout_duration
 
 
 class FitnessReActAgent:
@@ -86,6 +86,18 @@ class FitnessReActAgent:
                     "Use this when creating workout schedules that should start from today. "
                     "No input required. Returns current day name (e.g., 'Monday', 'Tuesday')."
                 )
+            ),
+            Tool(
+                name="estimate_workout_duration",
+                func=estimate_workout_duration,
+                description=(
+                    "Estimate the total duration of a workout including warm-up, exercises, rest periods, and cool-down. "
+                    "Use this when: 1) User asks how long a workout will take, 2) You create a workout plan (estimate duration after), "
+                    "3) User wants to know time commitment, 4) Planning workouts around user's schedule. "
+                    "Input format: Description of workout with exercises, sets, and reps. Can be list or detailed description. "
+                    "Examples: 'Bench Press, Squats, Deadlifts', '3 sets of Bench Press, 4 sets of Squats', '5 exercises for upper body'. "
+                    "Returns: Detailed breakdown with warm-up (5-10 min), exercise time, rest periods, cool-down (5 min), and total duration estimate."
+                )
             )
         ]
         return tools
@@ -117,11 +129,17 @@ Guidelines:
    - Users ask you to create a workout plan (validate it after creation)
    - Users ask about rest days or recovery
    - Users mention their current training schedule
-4. For complex requests (e.g., workout plans), break them down into multiple tool calls
-5. After creating any weekly workout plan, automatically validate it with validate_rest_day
-6. Provide helpful context and explanations with exercise recommendations
-7. If users ask about safety or medical concerns, remind them to consult healthcare professionals
-8. Be encouraging and supportive in your responses
+4. ALWAYS use the estimate_workout_duration tool when:
+   - Users ask how long a workout will take
+   - You create or suggest a workout plan (estimate duration after)
+   - Users mention time constraints or ask about time commitment
+   - Planning workouts that need to fit a schedule
+5. For complex requests (e.g., workout plans), break them down into multiple tool calls
+6. After creating any weekly workout plan, automatically validate it with validate_rest_day
+7. After creating any workout, provide duration estimate with estimate_workout_duration
+8. Provide helpful context and explanations with exercise recommendations
+9. If users ask about safety or medical concerns, remind them to consult healthcare professionals
+10. Be encouraging and supportive in your responses
 Begin!
 
 Question: {input}
@@ -176,6 +194,7 @@ Thought: {agent_scratchpad}"""
         print("  • Suggest exercises for different fitness levels")
         print("  • Create custom workout routines")
         print("  • Validate your weekly schedule for proper rest days")
+        print("  • Estimate workout duration to fit your schedule")
         print("\nType 'quit' or 'exit' to end the conversation.")
         print("="*60)
         

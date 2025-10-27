@@ -150,6 +150,136 @@ def get_current_day(dummy: str = "") -> str:
         return f"Error getting current day: {str(e)}"
 
 
+def estimate_workout_duration(workout_description: str) -> str:
+    """
+    Estimate the total duration of a workout based on exercises and structure
+    
+    Purpose: Calculates estimated workout time including exercise sets, rest periods,
+    warm-up, and cool-down. Helps users plan their training sessions realistically.
+    
+    Args:
+        workout_description (str): Description of the workout including exercises,
+                                  sets, reps, or list of exercise names. Can be:
+            - List of exercises (e.g., "Bench Press, Squats, Deadlifts")
+            - Detailed workout (e.g., "3 sets of Bench Press, 4 sets of Squats")
+            - Exercise count (e.g., "5 exercises for chest and back")
+    
+    Returns:
+        str: Detailed duration estimate with breakdown of:
+            - Warm-up time (5-10 minutes)
+            - Exercise time (based on sets/reps/exercises)
+            - Rest periods between sets
+            - Cool-down time (5 minutes)
+            - Total estimated duration
+    
+    Estimation Guidelines:
+        - Each exercise set: ~1 minute (includes execution time)
+        - Rest between sets: 1-2 minutes (shorter for isolation, longer for compounds)
+        - Default sets per exercise: 3-4 sets
+        - Warm-up: 5-10 minutes
+        - Cool-down: 5 minutes
+        - Compound exercises (squat, deadlift, bench): +30 seconds per set
+    
+    Examples:
+        >>> estimate_workout_duration("Bench Press, Squats, Deadlifts")
+        "Estimated workout duration: 45-55 minutes\\n\\nBreakdown:\\n- Warm-up: 5-10 min\\n- 3 exercises × 3-4 sets: 25-35 min\\n- Rest periods: 10-15 min\\n- Cool-down: 5 min"
+        
+        >>> estimate_workout_duration("3 sets of Bench Press (8 reps), 4 sets of Squats (10 reps), 3 sets of Rows (12 reps)")
+        "Estimated workout duration: 50-60 minutes\\n\\nBreakdown:\\n- Warm-up: 5-10 min\\n- 10 total sets: 30-35 min\\n- Rest periods: 12-18 min\\n- Cool-down: 5 min"
+        
+        >>> estimate_workout_duration("5 exercises for upper body")
+        "Estimated workout duration: 55-70 minutes\\n\\nBreakdown:\\n- Warm-up: 5-10 min\\n- 5 exercises × 3-4 sets: 35-45 min\\n- Rest periods: 15-20 min\\n- Cool-down: 5 min"
+    """
+    try:
+        if not workout_description or not isinstance(workout_description, str):
+            return "Error: Invalid workout description. Please provide a string describing the workout."
+        
+        workout_lower = workout_description.lower()
+        
+        # Parse workout to estimate number of exercises and sets
+        num_exercises = 0
+        total_sets = 0
+        
+        # Try to extract explicit set counts (e.g., "3 sets of", "4 sets")
+        import re
+        set_patterns = re.findall(r'(\d+)\s*sets?\s*(?:of|x)?', workout_lower)
+        if set_patterns:
+            total_sets = sum(int(s) for s in set_patterns)
+        
+        # Count exercises by common delimiters or keywords
+        exercise_indicators = [',', '\n', ' and ', ';']
+        exercise_parts = [workout_description]
+        for delimiter in exercise_indicators:
+            temp_parts = []
+            for part in exercise_parts:
+                temp_parts.extend(part.split(delimiter))
+            exercise_parts = temp_parts
+        
+        # Filter out empty parts and count meaningful exercise mentions
+        exercise_parts = [p.strip() for p in exercise_parts if p.strip() and len(p.strip()) > 3]
+        num_exercises = len(exercise_parts)
+        
+        # Check for explicit exercise count mentions (e.g., "5 exercises", "3 chest exercises")
+        exercise_count_patterns = re.findall(r'(\d+)\s*exercises?', workout_lower)
+        if exercise_count_patterns:
+            num_exercises = max(num_exercises, int(exercise_count_patterns[0]))
+        
+        # If we couldn't detect exercises, assume a minimal workout
+        if num_exercises == 0:
+            num_exercises = 3  # Default assumption
+        
+        # If sets weren't explicitly mentioned, estimate based on standard practice
+        if total_sets == 0:
+            sets_per_exercise = 3.5  # Average of 3-4 sets
+            total_sets = int(num_exercises * sets_per_exercise)
+        
+        # Estimate compound vs isolation exercises
+        compound_keywords = ['squat', 'deadlift', 'bench', 'press', 'row', 'pull-up', 'chin-up']
+        compound_count = sum(1 for keyword in compound_keywords if keyword in workout_lower)
+        
+        # Calculate time components
+        warmup_min = 5
+        warmup_max = 10
+        
+        # Exercise execution time (1-1.5 min per set, more for compounds)
+        avg_time_per_set = 1.0  # minutes
+        if compound_count > 0:
+            avg_time_per_set = 1.25  # Add time for compound movements
+        
+        exercise_time_min = int(total_sets * avg_time_per_set)
+        exercise_time_max = int(total_sets * (avg_time_per_set + 0.25))
+        
+        # Rest periods (1-2 min between sets)
+        # Subtract 1 from total_sets because no rest after last set
+        rest_periods = max(0, total_sets - num_exercises)  # Rest between sets within each exercise
+        rest_time_min = int(rest_periods * 1.0)
+        rest_time_max = int(rest_periods * 1.5)
+        
+        cooldown = 5
+        
+        # Calculate totals
+        total_min = warmup_min + exercise_time_min + rest_time_min + cooldown
+        total_max = warmup_max + exercise_time_max + rest_time_max + cooldown
+        
+        # Format output
+        breakdown = (
+            f"Estimated workout duration: {total_min}-{total_max} minutes\n\n"
+            f"Breakdown:\n"
+            f"- Warm-up: {warmup_min}-{warmup_max} min\n"
+            f"- Exercise execution ({total_sets} sets across {num_exercises} exercises): {exercise_time_min}-{exercise_time_max} min\n"
+            f"- Rest periods: {rest_time_min}-{rest_time_max} min\n"
+            f"- Cool-down: {cooldown} min\n\n"
+            f"Note: Actual time may vary based on exercise complexity, rest needs, and fitness level."
+        )
+        
+        return breakdown
+        
+    except Exception as e:
+        error_msg = f"Error estimating workout duration: {str(e)}"
+        print(f"DEBUG - Full error trace:\n{traceback.format_exc()}")
+        return error_msg
+
+
 def get_available_tools() -> dict:
     """
     Returns a dictionary of available tools for the ReAct agent
@@ -186,5 +316,17 @@ def get_available_tools() -> dict:
             "description": "Get the current day of the week",
             "parameters": {},
             "examples": []
+        },
+        "estimate_workout_duration": {
+            "function": estimate_workout_duration,
+            "description": "Estimate the total duration of a workout based on exercises and structure",
+            "parameters": {
+                "workout_description": "Description of workout with exercises, sets, or exercise count (string)"
+            },
+            "examples": [
+                "Bench Press, Squats, Deadlifts",
+                "3 sets of Bench Press, 4 sets of Squats, 3 sets of Rows",
+                "5 exercises for upper body"
+            ]
         }
     }
